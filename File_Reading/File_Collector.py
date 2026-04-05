@@ -15,6 +15,7 @@ def file_cipher_reader(file_path):
 
     found_functions = {'encrypt': False, 'decrypt': False}
 
+
     for item in node.body:
         if isinstance(item, ast.FunctionDef):
             if item.name in found_functions:
