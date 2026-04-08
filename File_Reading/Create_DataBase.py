@@ -1,3 +1,5 @@
+from cipher_breaker_files import *
+from Cryptography_files import *
 import os
 import time
 import importlib.util
@@ -64,3 +66,4 @@ import importlib.util
 #
 # # Example Execution:
 # # run_benchmarks("SECRET MESSAGE", 5)
+
