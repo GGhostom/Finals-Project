@@ -1,69 +1,66 @@
 import os
-import ast
 import shutil
+import ast
 
 
-def file_cipher_reader(file_path):
-    target_dir = "Cryptography_files"
+def register_crypto_module(file_path):
+    # 1. Configuration
+    target_folder = "Cryptography_files"
+    init_file = os.path.join(target_folder, "__init__.py")
+    file_name = os.path.basename(file_path)
+    module_name = os.path.splitext(file_name)[0]
 
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            node = ast.parse(f.read())
-    except (SyntaxError, FileNotFoundError, Exception) as e:
-        print(f"Could not process {file_path}: {e}")
-        return
-
-    found_functions = {'encrypt': False, 'decrypt': False}
-
-
-    for item in node.body:
-        if isinstance(item, ast.FunctionDef):
-            if item.name in found_functions:
-                args = [a.arg for a in item.args.args]
-                if args == ['msg', 'key']:
-                    found_functions[item.name] = True
-
-    if all(found_functions.values()):
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
+    # 2. Check if the functions exist using AST
+    with open(file_path, "r") as f:
         try:
-            shutil.move(file_path, os.path.join(target_dir, os.path.basename(file_path)))
-            print(f"Successfully moved: {file_path}")
-        except Exception as e:
-            print(f"Error moving file: {e}")
+            node = ast.parse(f.read())
+        except SyntaxError:
+            print(f"Error: {file_name} has syntax errors.")
+            return
+
+    # Extract all function names from the file
+    functions = {n.name for n in node.body if isinstance(n, ast.FunctionDef)}
+
+    if "encryption" in functions and "decryption" in functions:
+        # 3. Setup the directory
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
+
+        # 4. Copy the file
+        shutil.copy(file_path, os.path.join(target_folder, file_name))
+
+        # 5. Update or create __init__.py
+        update_init_file(init_file, module_name)
+        print(f"Successfully registered: {module_name}")
     else:
-        print(f"File {file_path} does not meet the requirements.")
+        print(f"Validation failed: {file_name} is missing required functions.")
 
 
-def file_breaker_reader(file_path):
-    target_dir = "cipher_breaker_files"
+def update_init_file(path, module_name):
+    all_list = []
 
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            tree = ast.parse(f.read())
-    except Exception as e:
-        print(f"Error reading {file_path}: {e}")
-        return
-    is_breaker = False
+    # Read existing __all__ if file exists
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            content = f.read()
+            # Simple check to extract existing list (could be improved with AST)
+            if "__all__ =" in content:
+                try:
+                    # Find the list within the string
+                    start = content.find("[") + 1
+                    end = content.find("]")
+                    existing_items = content[start:end].replace("'", "").replace('"', "").split(",")
+                    all_list = [i.strip() for i in existing_items if i.strip()]
+                except ValueError:
+                    all_list = []
 
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            # 1. Check if it takes exactly 1 argument (the cipher text)
-            if len(node.args.args) == 1:
-                # 2. Check if the function actually returns something
-                for sub_node in ast.walk(node):
-                    if isinstance(sub_node, ast.Return) and sub_node.value is not None:
-                        is_breaker = True
-                        break
-        if is_breaker:
-            break
+    # Add new module if not already there
+    if module_name not in all_list:
+        all_list.append(module_name)
 
-    if is_breaker:
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
-        shutil.move(file_path, os.path.join(target_dir, os.path.basename(file_path)))
-        print(f"Moved {file_path} to {target_dir}")
-    else:
-        print(f"File {file_path} does not look like a breaker.")
+    # Write back to __init__.py
+    with open(path, "w") as f:
+        f.write(f"__all__ = {all_list}\n")
 
-file_breaker_reader(input("Enter the file path: "))
+# Example Usage:
+register_crypto_module(input("Enter File: "))
