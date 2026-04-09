@@ -68,13 +68,13 @@ for _ in range(100):
     individual = [random.choice(FUNCTION_POOL) for _ in range(LAYER_DEPTH)]
     solutions.append(individual)
 
-for gen in range(1000):
+for gen in range(10000):
     ranked_solutions = []
     for s in solutions:
         score = get_cipher_strength(s)
         ranked_solutions.append((score, s))
     ranked_solutions.sort(key=lambda x: x[0], reverse=True)
-    print(f"Gen {gen} Best Strength: {ranked_solutions[0][0]}")
+    print(f"Gen {gen+1} Best Strength: {ranked_solutions[0][0]}")
     if ranked_solutions[0][0] > 9999:
         break
     best_ones = ranked_solutions[:20]
