@@ -45,12 +45,11 @@ import random
 #         newGen.append((e1,e2,e3))
 #     solutions = newGen
 
+
 def xor_op(data): return "xor_applied"
 def shift_op(data): return "shift_applied"
 def swap_op(data): return "swap_applied"
 def reverse_op(data): return "reverse_applied"
-
-
 FUNCTION_POOL = [xor_op, shift_op, swap_op, reverse_op]
 LAYER_DEPTH = 5
 
@@ -90,7 +89,6 @@ for gen in range(1000):
             child[random.randint(0, LAYER_DEPTH - 1)] = random.choice(FUNCTION_POOL)
         new_gen.append(child)
     solutions = new_gen
-
 
 best_layer = ranked_solutions[0][1]
 print(f"Optimized Layer Sequence: {[f.__name__ for f in best_layer]}")
