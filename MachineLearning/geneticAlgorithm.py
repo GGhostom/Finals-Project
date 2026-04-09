@@ -45,10 +45,6 @@ import random
 #         newGen.append((e1,e2,e3))
 #     solutions = newGen
 
-# --- Dummy Cipher Functions ---
-
-# temp functions
-
 def xor_op(data): return "xor_applied"
 def shift_op(data): return "shift_applied"
 def swap_op(data): return "swap_applied"
@@ -64,7 +60,7 @@ def run_cipher_layer(sequence, data):
     return data
 
 def get_cipher_strength(sequence):
-    return random.uniform(0, 100)
+    return random.uniform(0, 1000)
 
 
 # --- Main ---
