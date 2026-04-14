@@ -3,7 +3,7 @@ import shutil
 import ast
 
 
-def register_crypto_module(file_path):
+def register_cipher_module(file_path):
     target_folder = "Cryptography_files"
     init_file = os.path.join(target_folder, "__init__.py")
     file_name = os.path.basename(file_path)
@@ -27,6 +27,24 @@ def register_crypto_module(file_path):
         print(f"Validation failed: {file_name} is missing required functions.")
 
 
+
+def register_breaker_module(file_path):
+    target_folder = "Cipher_breaker_files"
+    init_file = os.path.join(target_folder, "__init__.py")
+    file_name = os.path.basename(file_path)
+    module_name = os.path.splitext(file_name)[0]
+
+    with open(file_path, "r") as f:
+        try:
+            node = ast.parse(f.read())
+        except SyntaxError:
+            print(f"Error: {file_name} has syntax errors.")
+            return
+
+    functions = {n.name for n in node.body if isinstance(n, ast.FunctionDef)}
+    ##continue
+
+
 def update_init_file(path, module_name):
     all_list = []
     if os.path.exists(path):
@@ -46,4 +64,4 @@ def update_init_file(path, module_name):
         f.write(f"__all__ = {all_list}\n")
 
 
-# register_crypto_module(input("Enter File: "))
+# register_cipher_module(input("Enter File: "))

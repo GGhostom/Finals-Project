@@ -1,6 +1,6 @@
 import random
 
-# ### Version 1
+# ### for numbers only
 #
 # def foo(x,y,z):
 #     return 6*x**3 + 9*y**2 + 90*z
@@ -52,6 +52,7 @@ def swap_op(data): return "swap_applied"
 def reverse_op(data): return "reverse_applied"
 FUNCTION_POOL = [xor_op, shift_op, swap_op, reverse_op]
 LAYER_DEPTH = 5
+#temp / test
 
 def run_cipher_layer(sequence, data):
     for func in sequence:
@@ -60,6 +61,7 @@ def run_cipher_layer(sequence, data):
 
 def get_cipher_strength(sequence):
     return random.uniform(0, 1000)
+#temp / test
 
 
 # --- Main ---
