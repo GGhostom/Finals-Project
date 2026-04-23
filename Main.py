@@ -1,37 +1,87 @@
-from utils.spec_registry import create_all_cipher_specs
 from file_reader.module_loader import load_cipher_functions
-from analyzers.layered_analysis import analyze_layered_cipher
+from utils.spec_builder import build_cipher_spec
+
+from models.metrics import Metrics
+from models.sample_set import SampleSet
+
+from analyzers import statistical, structural, complexity
+from engine import scorer, classifier
+
+from ml.train import train
+
+import torch
+
+
+def analyze_cipher(cipher_func):
+    spec = build_cipher_spec(cipher_func)
+
+    samples = SampleSet()
+
+    for i in range(16):
+        pt = i
+        ct = cipher_func(pt)
+
+        samples.add(format(pt, "08b"), format(ct, "08b"))
+
+    metrics = Metrics()
+
+    metrics.key_score = structural.key_score(spec.key_size)
+    metrics.structure_score = structural.structure_score(spec)
+
+    metrics.avalanche_score = statistical.compute_avalanche(
+        samples, cipher_func
+    )
+    metrics.entropy = statistical.compute_entropy(
+        [ct for _, ct in samples.pairs]
+    )
+
+    time = complexity.brute_force_time(spec.key_size)
+    metrics.complexity_score = complexity.complexity_score(time)
+
+    metrics.final_score = scorer.compute_final_score(metrics)
+
+    return metrics.final_score, classifier.classify(metrics.final_score)
 
 
 def main():
-    specs = create_all_cipher_specs()
-    funcs = load_cipher_functions()
+    print("==== Loading Ciphers ====\n")
 
-    # map name → function
-    func_map = {
-        f.__module__.split('.')[-1]: f
-        for f in funcs
-    }
+    ciphers = load_cipher_functions()
 
-    print("=== SINGLE CIPHERS ===")
-    for name, spec in specs.items():
-        print(name, "-> key:", spec.key_size)
+    print("==== Individual Cipher Analysis ====\n")
 
-    print("\n=== LAYERED TEST ===")
+    for cipher in ciphers:
+        score, label = analyze_cipher(cipher)
 
-    result = analyze_layered_cipher(
-        name="combo_cipher",
-        cipher_funcs=[
-            func_map["toy_spn"],
-            func_map["weak_cipher"]
-        ],
-        cipher_specs=[
-            specs["toy_spn"],
-            specs["weak_cipher"]
-        ]
-    )
+        print(f"{cipher.__name__}")
+        print(f"Score: {score:.2f}")
+        print(f"Class: {label}")
+        print("-" * 30)
 
-    print(result)
+    print("\n==== Training ML ====\n")
+
+    model, env = train()
+
+    print("\n==== Best Layered Cipher ====\n")
+
+    state = env.reset()
+    sequence = []
+
+    done = False
+
+    while not done:
+        state_tensor = torch.tensor([state], dtype=torch.long)
+
+        logits = model(state_tensor)
+        action = torch.argmax(logits, dim=1).item()
+
+        cipher = env.ciphers[action]
+        sequence.append(cipher.__name__)
+
+        state, reward, done = env.step(action)
+
+    print(" -> ".join(sequence))
+    print(f"\nFinal Score: {reward:.2f}")
 
 
 if __name__ == "__main__":

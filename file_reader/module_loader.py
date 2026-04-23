@@ -13,7 +13,6 @@ def load_cipher_functions():
         for attr_name in dir(module):
             if "encrypt" in attr_name:
                 func = getattr(module, attr_name)
-
                 if callable(func):
                     cipher_functions.append(func)
 
