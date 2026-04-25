@@ -12,8 +12,11 @@ def train():
 
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    for episode in range(300):
+    episodes = 300
+
+    for episode in range(episodes):
         state = env.reset()
+
         log_probs = []
         rewards = []
 

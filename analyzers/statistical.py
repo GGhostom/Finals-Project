@@ -6,10 +6,21 @@ def compute_avalanche(samples, encrypt_func):
     count = 0
 
     for pt, ct in samples.pairs:
-        flipped = flip_one_bit(pt)
-        new_ct = encrypt_func(flipped)
+        # convert string → int
+        pt_int = int(pt, 2)
+        ct_int = int(ct, 2)
 
-        diff = bit_difference(ct, new_ct)
+        # flip bit in integer form
+        flipped_int = pt_int ^ 1  # flip lowest bit
+
+        new_ct_int = encrypt_func(flipped_int)
+
+        # convert back to bit strings
+        ct_bits = format(ct_int, "08b")
+        new_ct_bits = format(new_ct_int, "08b")
+
+        diff = sum(a != b for a, b in zip(ct_bits, new_ct_bits))
+
         total_change += diff
         count += 1
 

@@ -5,7 +5,7 @@ class PolicyNet(nn.Module):
     def __init__(self, num_ciphers):
         super().__init__()
 
-        self.embed = nn.Embedding(num_ciphers + 1, 16)
+        self.embed = nn.Embedding(num_ciphers + 1, 16)  # +1 for PAD
 
         self.fc = nn.Sequential(
             nn.Linear(16 * 3, 64),
