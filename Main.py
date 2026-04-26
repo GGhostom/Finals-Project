@@ -14,20 +14,16 @@ import torch
 
 def analyze_cipher(cipher_func):
     spec = build_cipher_spec(cipher_func)
-
     samples = SampleSet()
 
     for i in range(16):
         pt = i
         ct = cipher_func(pt)
-
         samples.add(format(pt, "08b"), format(ct, "08b"))
 
     metrics = Metrics()
-
     metrics.key_score = structural.key_score(spec.key_size)
     metrics.structure_score = structural.structure_score(spec)
-
     metrics.avalanche_score = statistical.compute_avalanche(
         samples, cipher_func
     )
@@ -37,8 +33,7 @@ def analyze_cipher(cipher_func):
     time = complexity.brute_force_time(spec.key_size)
     metrics.complexity_score = complexity.complexity_score(time)
     metrics.final_score = scorer.compute_final_score(metrics)
-    label = classifier.classify(metrics.final_score)
-    return metrics.final_score, label
+    return metrics.final_score, classifier.classify(metrics.final_score)
 
 
 def main():
@@ -49,12 +44,17 @@ def main():
         return
 
     print("==== Individual Cipher Analysis ====\n")
+    best_single = None
+    best_score = -1
     for cipher in ciphers:
         score, label = analyze_cipher(cipher)
         print(f"{cipher.__name__}")
         print(f"Score: {score:.2f}")
         print(f"Class: {label}")
         print("-" * 30)
+        if score > best_score:
+            best_score = score
+            best_single = cipher
 
     print("\n==== Training ML ====\n")
     model, env = train()
@@ -71,7 +71,9 @@ def main():
         sequence.append(cipher.__name__)
         state, reward, done = env.step(action)
     print(" -> ".join(sequence))
-    print(f"\nFinal Score: {reward:.2f}")
+    print(f"\nFinal Layer Score: {reward:.2f}")
+
+    print(f"\nBest Single Cipher: {best_single.__name__} ({best_score:.2f})")
 
 
 if __name__ == "__main__":

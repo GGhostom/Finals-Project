@@ -14,17 +14,21 @@ class CipherEnv:
     def __init__(self):
         self.ciphers = load_cipher_functions()
         self.num_actions = len(self.ciphers)
-        self.PAD = self.num_actions  # padding index
+        self.PAD = self.num_actions
         self.reset()
 
     def reset(self):
-        self.sequence = []  # store indices, not functions
+        self.sequence = []
         return self._get_state()
 
     def _get_state(self):
         return self.sequence + [self.PAD] * (MAX_LAYERS - len(self.sequence))
 
     def step(self, action):
+        # ❌ prevent duplicate cipher usage
+        if action in self.sequence:
+            return self._get_state(), -50, True
+
         self.sequence.append(action)
 
         done = len(self.sequence) >= MAX_LAYERS
@@ -39,36 +43,48 @@ class CipherEnv:
     def evaluate_sequence(self, sequence):
         samples = SampleSet()
 
-        for i in range(16):
-            pt = i
-            ct = pt
-
+        # 🔹 real layered encryption
+        def layered_encrypt(x):
             for idx in sequence:
                 cipher = self.ciphers[idx]
-                ct = cipher(ct)
+                x = cipher(x)
+            return x
 
+        # generate samples
+        for i in range(32):
+            pt = i
+            ct = layered_encrypt(pt)
             samples.add(format(pt, "08b"), format(ct, "08b"))
 
         metrics = Metrics()
 
-        # use first cipher spec as approximation
-        first_cipher = self.ciphers[sequence[0]]
-        spec = build_cipher_spec(first_cipher)
-
-        metrics.key_score = structural.key_score(spec.key_size)
-        metrics.structure_score = structural.structure_score(spec)
-
+        # 🔹 statistical (REAL)
         metrics.avalanche_score = statistical.compute_avalanche(
-            samples, lambda x: x
+            samples, layered_encrypt
         )
 
         metrics.entropy = statistical.compute_entropy(
             [ct for _, ct in samples.pairs]
         )
 
-        time = complexity.brute_force_time(spec.key_size)
+        # 🔹 structural (combined key size)
+        total_key_size = 0
+        for idx in sequence:
+            spec = build_cipher_spec(self.ciphers[idx])
+            total_key_size += spec.key_size
+
+        metrics.key_score = structural.key_score(total_key_size)
+
+        # 🔹 complexity
+        time = complexity.brute_force_time(total_key_size)
         metrics.complexity_score = complexity.complexity_score(time)
+
+        # 🔹 structure score (simple but meaningful)
+        metrics.structure_score = len(sequence) * 2
 
         final = scorer.compute_final_score(metrics)
 
-        return final * 10  # scaled reward for better learning
+        # 🔥 reward shaping
+        reward = final * 10 - len(sequence) * 2
+
+        return reward
