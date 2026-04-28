@@ -44,3 +44,6 @@ def update_init_file(path, module_name):
         all_list.append(module_name)
     with open(path, "w") as f:
         f.write(f"__all__ = {all_list}\n")
+
+
+# register_cipher_module(input("Enter File: "))

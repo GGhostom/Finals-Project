@@ -1,11 +1,6 @@
-KEY_TYPE = "int"
-HAS_SBOX = False
-HAS_PERMUTATION = False
-
-
-def encryption(x, key):
+def shift_encrypt(x, key=3):
     return (x + key) % 256
 
 
-def decryption(x, key):
+def shift_decrypt(x, key=3):
     return (x - key) % 256

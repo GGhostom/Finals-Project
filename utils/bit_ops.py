@@ -2,10 +2,8 @@
 def int_to_bits(x, size=8):
     return format(x, f"0{size}b")
 
-
 def bits_to_int(bits):
     return int(bits, 2)
-
 
 def bit_difference(a, b):
     return sum(x != y for x, y in zip(a, b))
