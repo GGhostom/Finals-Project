@@ -9,13 +9,13 @@ def key_score(key_size):
         return 90
 
 
-def round_score(num_rounds):
-    if num_rounds < 5:
-        return 20
-    elif num_rounds < 10:
-        return 50
-    else:
-        return 80
+# def round_score(num_rounds):
+#     if num_rounds < 5:
+#         return 20
+#     elif num_rounds < 10:
+#         return 50
+#     else:
+#         return 80
 
 
 def structure_score(spec):
@@ -25,7 +25,7 @@ def structure_score(spec):
         score += 30
     if spec.has_permutation:
         score += 30
-    if "xor" in spec.operations:
-        score += 10
+    # if "xor" in spec.operations:
+    #     score += 10
 
     return score

@@ -49,8 +49,8 @@ def detect_operations(func, spec):
         spec.has_sbox = True
 
 
-def cipher_metadata(**meta):
-    def wrapper(func):
-        func._cipher_meta = meta
-        return func
-    return wrapper
+# def cipher_metadata(**meta):
+#     def wrapper(func):
+#         func._cipher_meta = meta
+#         return func
+#     return wrapper

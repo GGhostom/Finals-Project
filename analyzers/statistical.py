@@ -44,10 +44,10 @@ def compute_entropy(ciphertexts):
     return entropy
 
 
-def compute_correlation(samples):
-    correlations = []
-
-    for pt, ct in samples.pairs:
-        correlations.append(compare_bits(pt, ct))
-
-    return average(correlations)
+# def compute_correlation(samples):
+#     correlations = []
+#
+#     for pt, ct in samples.pairs:
+#         correlations.append(compare_bits(pt, ct))
+#
+#     return average(correlations)
