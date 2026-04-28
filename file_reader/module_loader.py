@@ -1,19 +1,34 @@
 import importlib
-from file_reader.cryptography_files import __all__
+import os
+import sys
+
+from models.cipher_spec import CipherSpec
 
 
 def load_cipher_functions():
-    cipher_functions = []
+    folder = "file_reader/cryptography_files"
+    sys.path.append(folder)
 
-    for module_name in __all__:
-        module = importlib.import_module(
-            f"file_reader.cryptography_files.{module_name}"
-        )
+    ciphers = []
 
-        for attr_name in dir(module):
-            if "encrypt" in attr_name:
-                func = getattr(module, attr_name)
-                if callable(func):
-                    cipher_functions.append(func)
+    for file in os.listdir(folder):
+        if file.endswith(".py") and file != "__init__.py":
 
-    return cipher_functions
+            module_name = file[:-3]
+            module = importlib.import_module(module_name)
+
+            # ❗ ONLY ACCEPT VALID MODULES
+            if not hasattr(module, "encryption"):
+                continue
+
+            cipher = CipherSpec(
+                name=module_name,
+                encrypt_func=module.encryption,
+                key_type=getattr(module, "KEY_TYPE", "int"),
+                has_sbox=getattr(module, "HAS_SBOX", False),
+                has_permutation=getattr(module, "HAS_PERMUTATION", False)
+            )
+
+            ciphers.append(cipher)
+
+    return ciphers

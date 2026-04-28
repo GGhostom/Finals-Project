@@ -1,53 +1,37 @@
-from utils.bit_ops import *
-
-
-def compute_avalanche(samples, encrypt_func):
-    total_change = 0
-    count = 0
-
-    for pt, ct in samples.pairs:
-        # convert string → int
-        pt_int = int(pt, 2)
-        ct_int = int(ct, 2)
-
-        # flip bit in integer form
-        flipped_int = pt_int ^ 1  # flip lowest bit
-
-        new_ct_int = encrypt_func(flipped_int)
-
-        # convert back to bit strings
-        ct_bits = format(ct_int, "08b")
-        new_ct_bits = format(new_ct_int, "08b")
-
-        diff = sum(a != b for a, b in zip(ct_bits, new_ct_bits))
-
-        total_change += diff
-        count += 1
-
-    return total_change / count if count else 0
+import math
+from collections import Counter
 
 
 def compute_entropy(ciphertexts):
-    from collections import Counter
-    import math
+    if not ciphertexts:
+        return 0
 
-    data = "".join(ciphertexts)
-    freq = Counter(data)
+    freq = Counter(ciphertexts)
+    total = len(ciphertexts)
 
-    total = len(data)
-    entropy = 0
-
-    for f in freq.values():
-        p = f / total
+    entropy = 0.0
+    for count in freq.values():
+        p = count / total
         entropy -= p * math.log2(p)
 
-    return entropy
+    return entropy / math.log2(256)
 
 
-# def compute_correlation(samples):
-#     correlations = []
-#
-#     for pt, ct in samples.pairs:
-#         correlations.append(compare_bits(pt, ct))
-#
-#     return average(correlations)
+def compute_avalanche(samples, encrypt_func, key):
+    total_bits = 0
+    changed_bits = 0
+
+    for pt_bits, ct_bits in samples.pairs:
+        pt = int(pt_bits, 2)
+
+        for i in range(8):
+            flipped = pt ^ (1 << i)
+            new_ct = encrypt_func(flipped, key)
+            new_bits = format(new_ct, "08b")
+
+            for a, b in zip(ct_bits, new_bits):
+                if a != b:
+                    changed_bits += 1
+            total_bits += 8
+
+    return changed_bits / total_bits if total_bits else 0

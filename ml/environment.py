@@ -1,10 +1,12 @@
 from file_reader.module_loader import load_cipher_functions
 from utils.spec_builder import build_cipher_spec
+from utils.key_utils import generate_key
 
 from models.metrics import Metrics
 from models.sample_set import SampleSet
 
 from analyzers import statistical, structural, complexity
+from analyzers.indistinguishability import compute_indistinguishability
 from engine import scorer
 
 MAX_LAYERS = 3
@@ -15,42 +17,51 @@ class CipherEnv:
         self.ciphers = load_cipher_functions()
         self.num_actions = len(self.ciphers)
         self.PAD = self.num_actions
+
+        self.cache = {}
+
         self.reset()
 
     def reset(self):
         self.sequence = []
+        self.keys = []
         return self._get_state()
 
     def _get_state(self):
         return self.sequence + [self.PAD] * (MAX_LAYERS - len(self.sequence))
 
     def step(self, action):
-        # ❌ prevent duplicate cipher usage
         if action in self.sequence:
             return self._get_state(), -50, True
 
+        cipher = self.ciphers[action]
+        key = generate_key(cipher)
+
         self.sequence.append(action)
+        self.keys.append(key)
 
         done = len(self.sequence) >= MAX_LAYERS
 
         if done:
-            reward = self.evaluate_sequence(self.sequence)
+            reward = self.evaluate_sequence()
         else:
             reward = 0
 
         return self._get_state(), reward, done
 
-    def evaluate_sequence(self, sequence):
+    def evaluate_sequence(self):
+        key = tuple(self.sequence)
+
+        if key in self.cache:
+            return self.cache[key]
+
         samples = SampleSet()
 
-        # 🔹 real layered encryption
         def layered_encrypt(x):
-            for idx in sequence:
-                cipher = self.ciphers[idx]
-                x = cipher(x)
+            for idx, k in zip(self.sequence, self.keys):
+                x = self.ciphers[idx](x, k)
             return x
 
-        # generate samples
         for i in range(32):
             pt = i
             ct = layered_encrypt(pt)
@@ -58,33 +69,32 @@ class CipherEnv:
 
         metrics = Metrics()
 
-        # 🔹 statistical (REAL)
         metrics.avalanche_score = statistical.compute_avalanche(
-            samples, layered_encrypt
+            samples, self.ciphers[self.sequence[0]],  # representative
+            self.ciphers[self.sequence[0]]
         )
 
         metrics.entropy = statistical.compute_entropy(
             [ct for _, ct in samples.pairs]
         )
 
-        # 🔹 structural (combined key size)
-        total_key_size = 0
-        for idx in sequence:
-            spec = build_cipher_spec(self.ciphers[idx])
-            total_key_size += spec.key_size
-
+        total_key_size = len(self.keys) * 8
         metrics.key_score = structural.key_score(total_key_size)
 
-        # 🔹 complexity
         time = complexity.brute_force_time(total_key_size)
         metrics.complexity_score = complexity.complexity_score(time)
 
-        # 🔹 structure score (simple but meaningful)
-        metrics.structure_score = len(sequence) * 2
+        metrics.structure_score = len(self.sequence) * 2
+
+        metrics.ind_score = compute_indistinguishability(
+            layered_encrypt,
+            self.ciphers[self.sequence[0]]
+        )
 
         final = scorer.compute_final_score(metrics)
 
-        # 🔥 reward shaping
-        reward = final * 10 - len(sequence) * 2
+        reward = final * 10 - len(self.sequence) * 2
+
+        self.cache[key] = reward
 
         return reward

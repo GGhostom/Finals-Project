@@ -1,11 +1,23 @@
 class CipherSpec:
-    def __init__(self, name, cipher_type, key_size, block_size, num_rounds):
+    def __init__(
+        self,
+        name,
+        encrypt_func,
+        key_type="int",
+        has_sbox=False,
+        has_permutation=False
+    ):
         self.name = name
-        self.cipher_type = cipher_type
-        self.key_size = key_size
-        self.block_size = block_size
-        self.num_rounds = num_rounds
+        self.encrypt = encrypt_func
+        self.key_type = key_type
+        self.has_sbox = has_sbox
+        self.has_permutation = has_permutation
 
-        self.has_sbox = False
-        self.has_permutation = False
-        self.operations = []
+    def __repr__(self):
+        return (
+            f"CipherSpec("
+            f"name={self.name}, "
+            f"key={self.key_type}, "
+            f"sbox={self.has_sbox}, "
+            f"perm={self.has_permutation})"
+        )
