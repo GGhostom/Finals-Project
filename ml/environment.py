@@ -7,14 +7,16 @@ from models.sample_set import SampleSet
 from analyzers import statistical, structural, complexity
 from engine import scorer
 
-MAX_LAYERS = 3
+from utils.key_utils import generate_key_for_cipher
 
 
 class CipherEnv:
-    def __init__(self):
+    def __init__(self, max_layers=3):
         self.ciphers = load_cipher_functions()
         self.num_actions = len(self.ciphers)
         self.PAD = self.num_actions
+        self.max_layers = max_layers
+        self.cache = {}
         self.reset()
 
     def reset(self):
@@ -22,16 +24,15 @@ class CipherEnv:
         return self._get_state()
 
     def _get_state(self):
-        return self.sequence + [self.PAD] * (MAX_LAYERS - len(self.sequence))
+        return self.sequence + [self.PAD] * (self.max_layers - len(self.sequence))
 
     def step(self, action):
-        # ❌ prevent duplicate cipher usage
         if action in self.sequence:
-            return self._get_state(), -50, True
+            return self._get_state(), -10, True
 
         self.sequence.append(action)
 
-        done = len(self.sequence) >= MAX_LAYERS
+        done = len(self.sequence) >= self.max_layers
 
         if done:
             reward = self.evaluate_sequence(self.sequence)
@@ -43,11 +44,13 @@ class CipherEnv:
     def evaluate_sequence(self, sequence):
         samples = SampleSet()
 
-        # 🔹 real layered encryption
         def layered_encrypt(x):
             for idx in sequence:
                 cipher = self.ciphers[idx]
-                x = cipher(x)
+
+                key = generate_key_for_cipher(cipher)
+
+                x = cipher(x, key)
             return x
 
         # generate samples

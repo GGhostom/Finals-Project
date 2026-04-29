@@ -10,10 +10,12 @@ def load_cipher_functions():
             f"file_reader.cryptography_files.{module_name}"
         )
 
-        for attr_name in dir(module):
-            if "encrypt" in attr_name:
-                func = getattr(module, attr_name)
-                if callable(func):
-                    cipher_functions.append(func)
+        if hasattr(module, "encryption"):
+            func = getattr(module, "encryption")
+
+            # 🔥 attach module name
+            func.__name__ = module_name
+
+            cipher_functions.append(func)
 
     return cipher_functions

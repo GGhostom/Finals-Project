@@ -1,7 +1,4 @@
-# multiplicative_cipher.py
-
 MOD = 256
-KEY = 5  # must be coprime with 256 (odd numbers usually ok)
 
 
 def modinv(a, m):
@@ -11,9 +8,12 @@ def modinv(a, m):
     return 1
 
 
-def encryption(x):
-    return (x * KEY) % MOD
+def encryption(x, key):
+    k = (key | 1) % MOD  # ensure odd (invertible)
+    return (x * k) % MOD
 
 
-def decryption(x):
-    return (x * modinv(KEY, MOD)) % MOD
+def decryption(x, key):
+    k = (key | 1) % MOD
+    inv = modinv(k, MOD)
+    return (x * inv) % MOD

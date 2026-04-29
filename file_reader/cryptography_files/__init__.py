@@ -1,1 +1,9 @@
-__all__ = ["shift_cipher","spn_cipher","xor_cipher"]
+__all__ = [
+    "feistel_cipher",
+    "hybrid_cipher",
+    "multiplicative_cipher",
+    "reverse_cipher",
+    "rotate_cipher",
+    "shift_cipher",
+    "xor_cipher",
+]

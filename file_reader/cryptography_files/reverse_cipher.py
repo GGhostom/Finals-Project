@@ -1,9 +1,7 @@
-# reverse_cipher.py
-
-def encryption(x):
+def encryption(x, key):
     b = format(x, "08b")
     return int(b[::-1], 2)
 
 
-def decryption(x):
-    return encryption(x)
+def decryption(x, key):
+    return encryption(x, key)

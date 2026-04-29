@@ -8,13 +8,13 @@ from ml.environment import CipherEnv
 from ml.model import PolicyNet
 
 
-def train():
+def train(max_layers):
     torch.manual_seed(42)
     random.seed(42)
     np.random.seed(42)
 
-    env = CipherEnv()
-    model = PolicyNet(env.num_actions)
+    env = CipherEnv(max_layers=max_layers)
+    model = PolicyNet(env.num_actions, env.max_layers)
 
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
@@ -57,7 +57,8 @@ def train():
             best_reward = total_reward
             best_sequence = env.sequence.copy()
 
-        loss = sum([-lp * total_reward for lp in log_probs])
+        baseline = total_reward / len(log_probs)
+        loss = sum([-lp * (total_reward - baseline) for lp in log_probs])
 
         optimizer.zero_grad()
         loss.backward()

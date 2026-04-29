@@ -11,18 +11,25 @@ from engine import scorer, classifier
 
 from ml.train import train
 
+from utils.key_utils import generate_key_for_cipher
 
 # =========================
 # ANALYZE SINGLE CIPHER
 # =========================
+
+
 def analyze_cipher(cipher_func):
     spec = build_cipher_spec(cipher_func)
 
     samples = SampleSet()
 
+    # 🔥 generate ONE key per cipher evaluation
+    key = generate_key_for_cipher(cipher_func)
+
     for i in range(16):
         pt = i
-        ct = cipher_func(pt)
+        ct = cipher_func(pt, key)
+
         samples.add(format(pt, "08b"), format(ct, "08b"))
 
     metrics = Metrics()
@@ -31,7 +38,8 @@ def analyze_cipher(cipher_func):
     metrics.structure_score = structural.structure_score(spec)
 
     metrics.avalanche_score = statistical.compute_avalanche(
-        samples, cipher_func
+        samples,
+        lambda x: cipher_func(x, key)   # 🔥 important
     )
 
     metrics.entropy = statistical.compute_entropy(
@@ -41,8 +49,9 @@ def analyze_cipher(cipher_func):
     time = complexity.brute_force_time(spec.key_size)
     metrics.complexity_score = complexity.complexity_score(time)
 
-    # 🔥 NEW ML metric
-    metrics.ind_score = compute_indistinguishability(cipher_func)
+    metrics.ind_score = compute_indistinguishability(
+        lambda x: cipher_func(x, key)   # 🔥 important
+    )
 
     metrics.final_score = scorer.compute_final_score(metrics)
 
@@ -55,6 +64,13 @@ def analyze_cipher(cipher_func):
 # MAIN PIPELINE
 # =========================
 def main():
+    try:
+        max_layers = int(input("Enter number of cipher layers (e.g. 2-5): "))
+        if max_layers <= 0:
+            raise ValueError
+    except:
+        print("Invalid input, defaulting to 3 layers.")
+        max_layers = 3
     print("\n==== Loading Ciphers ====\n")
 
     ciphers = load_cipher_functions()
@@ -91,7 +107,7 @@ def main():
     # =========================
     print("\n==== Training ML ====\n")
 
-    model, env, best_sequence, best_reward = train()
+    model, env, best_sequence, best_reward = train(max_layers)
 
     # =========================
     # Output best layered cipher

@@ -1,8 +1,6 @@
-# xor_cipher.py
-
-def encryption(x, key=42):
+def encryption(x, key):
     return x ^ key
 
 
-def decryption(x, key=42):
+def decryption(x, key):
     return x ^ key
