@@ -1,6 +1,8 @@
-def shift_encrypt(x, key=3):
+# shift_cipher.py
+
+def encryption(x, key=3):
     return (x + key) % 256
 
 
-def shift_decrypt(x, key=3):
+def decryption(x, key=3):
     return (x - key) % 256

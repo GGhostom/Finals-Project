@@ -1,1 +1,1 @@
-__all__ = ["bitshuffle_cipher","mix_cipher","shift_cipher","spn_cipher","xor_cipher"]
+__all__ = ["shift_cipher","spn_cipher","xor_cipher"]
