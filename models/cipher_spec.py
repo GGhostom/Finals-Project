@@ -5,7 +5,6 @@ class CipherSpec:
         self.key_size = key_size
         self.block_size = block_size
         self.num_rounds = num_rounds
-
         self.has_sbox = False
         self.has_permutation = False
         self.operations = []

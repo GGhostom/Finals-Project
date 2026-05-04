@@ -10,6 +10,5 @@ class CipherClassifier(nn.Module):
             nn.Linear(32, 1),
             nn.Sigmoid()
         )
-
     def forward(self, x):
         return self.net(x)

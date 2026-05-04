@@ -20,12 +20,10 @@ def key_score(key_size):
 
 def structure_score(spec):
     score = 0
-
     if spec.has_sbox:
         score += 30
     if spec.has_permutation:
         score += 30
     # if "xor" in spec.operations:
     #     score += 10
-
     return score

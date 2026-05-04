@@ -1,17 +1,12 @@
 from file_reader.module_loader import load_cipher_functions
-from utils.spec_builder import build_cipher_spec
-
 from models.metrics import Metrics
 from models.sample_set import SampleSet
-
-from analyzers import statistical, structural, complexity
-from analyzers.indistinguishability import compute_indistinguishability
-
+from analyzers import statistical, complexity
 from engine import scorer, classifier
-
 from ml.train import train
-
+from analyzers.ind_cpa import compute_ind_cpa
 from utils.key_utils import generate_key_for_cipher
+
 
 # =========================
 # ANALYZE SINGLE CIPHER
@@ -19,44 +14,23 @@ from utils.key_utils import generate_key_for_cipher
 
 
 def analyze_cipher(cipher_func):
-    spec = build_cipher_spec(cipher_func)
-
-    samples = SampleSet()
-
-    # 🔥 generate ONE key per cipher evaluation
     key = generate_key_for_cipher(cipher_func)
-
-    for i in range(16):
+    def f(x):
+        return cipher_func(x, key)
+    samples = SampleSet()
+    for i in range(32):
         pt = i
-        ct = cipher_func(pt, key)
-
+        ct = f(pt)
         samples.add(format(pt, "08b"), format(ct, "08b"))
-
     metrics = Metrics()
-
-    metrics.key_score = structural.key_score(spec.key_size)
-    metrics.structure_score = structural.structure_score(spec)
-
-    metrics.avalanche_score = statistical.compute_avalanche(
-        samples,
-        lambda x: cipher_func(x, key)   # 🔥 important
-    )
-
-    metrics.entropy = statistical.compute_entropy(
-        [ct for _, ct in samples.pairs]
-    )
-
-    time = complexity.brute_force_time(spec.key_size)
+    metrics.avalanche_score = statistical.compute_avalanche(samples, f)
+    metrics.entropy = statistical.compute_entropy([ct for _, ct in samples.pairs])
+    time = complexity.brute_force_time(8)
     metrics.complexity_score = complexity.complexity_score(time)
-
-    metrics.ind_score = compute_indistinguishability(
-        lambda x: cipher_func(x, key)   # 🔥 important
-    )
-
+    metrics.structure_score = 2
+    metrics.ind_score, metrics.ind_acc = compute_ind_cpa(f)
     metrics.final_score = scorer.compute_final_score(metrics)
-
     label = classifier.classify(metrics.final_score)
-
     return metrics, label
 
 
@@ -74,7 +48,6 @@ def main():
     print("\n==== Loading Ciphers ====\n")
 
     ciphers = load_cipher_functions()
-
     if not ciphers:
         print("No ciphers found.")
         return
@@ -83,13 +56,10 @@ def main():
     # Individual analysis
     # =========================
     print("==== Individual Cipher Analysis ====\n")
-
     best_single = None
     best_score = -1
-
     for cipher in ciphers:
         metrics, label = analyze_cipher(cipher)
-
         print(f"{cipher.__name__}")
         print(f"Score: {metrics.final_score:.2f}")
         print(f"Class: {label}")
@@ -97,7 +67,6 @@ def main():
         print(f"Avalanche: {metrics.avalanche_score:.3f}")
         print(f"IND Score: {metrics.ind_score:.3f}")
         print("-" * 40)
-
         if metrics.final_score > best_score:
             best_score = metrics.final_score
             best_single = cipher
@@ -106,7 +75,6 @@ def main():
     # Train ML
     # =========================
     print("\n==== Training ML ====\n")
-
     model, env, best_sequence, best_reward = train(max_layers)
 
     # =========================
@@ -127,8 +95,5 @@ def main():
     print(f"\nBest Single Cipher: {best_single.__name__} ({best_score:.2f})")
 
 
-# =========================
-# ENTRY POINT
-# =========================
 if __name__ == "__main__":
     main()
